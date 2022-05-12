@@ -39,12 +39,22 @@ public class IndexController {
 	
 	@PostMapping
 	public ResponseEntity<Usuario> cadastrar(@RequestBody Usuario usuario){
+		/*for(int i = 0; i < usuario.getTelefones().size(); i++) {
+			usuario.getTelefones().get(i).setUsuario(usuario);
+		}*/
+		usuario.getTelefones().forEach(telefone -> {
+			telefone.setUsuario(usuario);
+		});
+		
 		Usuario usuarioRetorno = usuarioRepository.save(usuario);
 		return new ResponseEntity<Usuario>(usuarioRetorno, HttpStatus.CREATED);
 	}
 	
 	@PutMapping
 	public ResponseEntity<Usuario> atualizar(@RequestBody Usuario usuario){
+		usuario.getTelefones().forEach(telefone -> {
+			telefone.setUsuario(usuario);
+		});
 		Usuario usuarioRetorno = usuarioRepository.save(usuario);
 		return new ResponseEntity<Usuario>(usuarioRetorno, HttpStatus.OK);
 	}
