@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import curso.api.rest.model.Usuario;
 import curso.api.rest.repository.UsuarioRepository;
 
+//@CrossOrigin(origins = {"http://www.google.com.br"})
 @RestController
 @RequestMapping("/usuarios")
 public class IndexController {
@@ -31,6 +32,7 @@ public class IndexController {
 		return new ResponseEntity<Usuario>(usuario.get(), HttpStatus.OK);
 	}
 	
+	//@CrossOrigin(origins = "*")
 	@GetMapping
 	public ResponseEntity<List<Usuario>> usuarios(){
 		List<Usuario> list = (List<Usuario>)usuarioRepository.findAll();
