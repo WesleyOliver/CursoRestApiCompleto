@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,6 +45,8 @@ public class IndexController {
 		/*for(int i = 0; i < usuario.getTelefones().size(); i++) {
 			usuario.getTelefones().get(i).setUsuario(usuario);
 		}*/
+		usuario.setSenha(new BCryptPasswordEncoder().encode(usuario.getSenha()));
+		
 		usuario.getTelefones().forEach(telefone -> {
 			telefone.setUsuario(usuario);
 		});
@@ -57,6 +60,13 @@ public class IndexController {
 		usuario.getTelefones().forEach(telefone -> {
 			telefone.setUsuario(usuario);
 		});
+		
+		Usuario userTemp = usuarioRepository.findUserByLogin(usuario.getLogin());
+		
+		if(!usuario.getSenha().equals(userTemp.getSenha())) {
+			usuario.setSenha(new BCryptPasswordEncoder().encode(usuario.getSenha()));
+		}
+		
 		Usuario usuarioRetorno = usuarioRepository.save(usuario);
 		return new ResponseEntity<Usuario>(usuarioRetorno, HttpStatus.OK);
 	}
