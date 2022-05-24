@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -23,54 +25,63 @@ import curso.api.rest.repository.UsuarioRepository;
 @RestController
 @RequestMapping("/usuarios")
 public class IndexController {
-	
+
 	@Autowired
 	private UsuarioRepository usuarioRepository;
-	
+
 	@GetMapping("/{id}")
-	public ResponseEntity<Usuario> init(@PathVariable("id") Long id){
+	@CacheEvict(value = "cacheuser", allEntries = true)
+	@CachePut(value = "cacheuser")
+	public ResponseEntity<Usuario> init(@PathVariable("id") Long id) {
 		Optional<Usuario> usuario = usuarioRepository.findById(id);
 		return new ResponseEntity<Usuario>(usuario.get(), HttpStatus.OK);
 	}
-	
-	//@CrossOrigin(origins = "*")
+
+	// @CrossOrigin(origins = "*")
 	@GetMapping
+	//@Cacheable(value = "cacheusuarios")
+	@CacheEvict(value = "cacheusuarios", allEntries = true)
+	@CachePut(value = "cacheusuarios")
 	public ResponseEntity<List<Usuario>> usuarios(){
-		List<Usuario> list = (List<Usuario>)usuarioRepository.findAll();
+		List<Usuario> list = (List<Usuario>) usuarioRepository.findAll();
+
+		//Thread.sleep(6000);
+		
 		return new ResponseEntity<List<Usuario>>(list, HttpStatus.OK);
 	}
-	
+
 	@PostMapping
-	public ResponseEntity<Usuario> cadastrar(@RequestBody Usuario usuario){
-		/*for(int i = 0; i < usuario.getTelefones().size(); i++) {
-			usuario.getTelefones().get(i).setUsuario(usuario);
-		}*/
+	public ResponseEntity<Usuario> cadastrar(@RequestBody Usuario usuario) {
+		/*
+		 * for(int i = 0; i < usuario.getTelefones().size(); i++) {
+		 * usuario.getTelefones().get(i).setUsuario(usuario); }
+		 */
 		usuario.setSenha(new BCryptPasswordEncoder().encode(usuario.getSenha()));
-		
+
 		usuario.getTelefones().forEach(telefone -> {
 			telefone.setUsuario(usuario);
 		});
-		
+
 		Usuario usuarioRetorno = usuarioRepository.save(usuario);
 		return new ResponseEntity<Usuario>(usuarioRetorno, HttpStatus.CREATED);
 	}
-	
+
 	@PutMapping
-	public ResponseEntity<Usuario> atualizar(@RequestBody Usuario usuario){
+	public ResponseEntity<Usuario> atualizar(@RequestBody Usuario usuario) {
 		usuario.getTelefones().forEach(telefone -> {
 			telefone.setUsuario(usuario);
 		});
-		
+
 		Usuario userTemp = usuarioRepository.findUserByLogin(usuario.getLogin());
-		
-		if(!usuario.getSenha().equals(userTemp.getSenha())) {
+
+		if (!usuario.getSenha().equals(userTemp.getSenha())) {
 			usuario.setSenha(new BCryptPasswordEncoder().encode(usuario.getSenha()));
 		}
-		
+
 		Usuario usuarioRetorno = usuarioRepository.save(usuario);
 		return new ResponseEntity<Usuario>(usuarioRetorno, HttpStatus.OK);
 	}
-	
+
 	@DeleteMapping("/{id}")
 	public ResponseEntity<String> delete(@PathVariable("id") Long id) {
 		usuarioRepository.deleteById(id);
@@ -78,4 +89,3 @@ public class IndexController {
 	}
 
 }
- 
