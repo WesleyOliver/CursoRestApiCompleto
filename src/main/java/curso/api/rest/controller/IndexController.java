@@ -1,5 +1,11 @@
 package curso.api.rest.controller;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,7 +24,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.gson.Gson;
+
 import curso.api.rest.model.Usuario;
+import curso.api.rest.model.UsuarioDto;
 import curso.api.rest.repository.UsuarioRepository;
 
 //@CrossOrigin(origins = {"http://www.google.com.br"})
@@ -32,9 +41,9 @@ public class IndexController {
 	@GetMapping("/{id}")
 	@CacheEvict(value = "cacheuser", allEntries = true)
 	@CachePut(value = "cacheuser")
-	public ResponseEntity<Usuario> init(@PathVariable("id") Long id) {
+	public ResponseEntity<UsuarioDto> init(@PathVariable("id") Long id) {
 		Optional<Usuario> usuario = usuarioRepository.findById(id);
-		return new ResponseEntity<Usuario>(usuario.get(), HttpStatus.OK);
+		return new ResponseEntity<UsuarioDto>(new UsuarioDto(usuario.get()), HttpStatus.OK);
 	}
 
 	// @CrossOrigin(origins = "*")
@@ -51,16 +60,39 @@ public class IndexController {
 	}
 
 	@PostMapping
-	public ResponseEntity<Usuario> cadastrar(@RequestBody Usuario usuario) {
+	public ResponseEntity<Usuario> cadastrar(@RequestBody Usuario usuario) throws Exception {
 		/*
 		 * for(int i = 0; i < usuario.getTelefones().size(); i++) {
 		 * usuario.getTelefones().get(i).setUsuario(usuario); }
 		 */
-		usuario.setSenha(new BCryptPasswordEncoder().encode(usuario.getSenha()));
-
 		usuario.getTelefones().forEach(telefone -> {
 			telefone.setUsuario(usuario);
 		});
+		
+		usuario.setSenha(new BCryptPasswordEncoder().encode(usuario.getSenha()));
+
+		//Consumindo um api publica externa
+		URL url = new URL("https://viacep.com.br/ws/"+ usuario.getCep() +"/json/");
+		URLConnection connection = url.openConnection();
+		InputStream is = connection.getInputStream();
+		BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+		
+		String cep = "";
+		StringBuilder jsonCep = new StringBuilder();
+		
+		while((cep = br.readLine()) != null) {
+			jsonCep.append(cep);
+		}
+		
+		System.out.println(jsonCep);
+		Usuario userAux = new Gson().fromJson(jsonCep.toString(), Usuario.class);
+		
+		usuario.setCep(userAux.getCep());
+		usuario.setLogradouro(userAux.getLogradouro());
+		usuario.setComplemento(userAux.getComplemento());
+		usuario.setBairro(userAux.getBairro());
+		usuario.setLocalidade(userAux.getLocalidade());
+		usuario.setUf(userAux.getUf());
 
 		Usuario usuarioRetorno = usuarioRepository.save(usuario);
 		return new ResponseEntity<Usuario>(usuarioRetorno, HttpStatus.CREATED);
